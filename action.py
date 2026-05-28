@@ -1,6 +1,9 @@
 from modifiers import Modifier
 from collections import Counter
 
+REDIRECTION_ACTIONS = {"bus_drive", "mail", "trolley_drive"}
+BLOCK_ACTIONS = {"block", "jailkeep"}
+
 
 class Action:
     def __init__(self, name, description):
@@ -12,9 +15,11 @@ class Action:
 
     def get_targets(self):
         targets = []
-        for key in ["target", "mail_from", "target_a", "mail_to", "target_b"]:
+        for key in ["target", "target_a", "target_b", "mail_from"]:
             if hasattr(self, key):
                 targets.append(getattr(self, key))
+        if hasattr(self, "mail_to"):
+            targets.extend(self.mail_to)
         return targets
 
 
@@ -98,15 +103,23 @@ class TrolleyDrive(Action):
 
 
 class Mail(Action):
-    def __init__(self, mail_from, mail_to):
+    """
+    A mailman should only succeed if the number of mail_to targets specified matches the number of targets in mail_from's action.
+    """
+
+    def __init__(self, mail_from, *mail_to):
         super().__init__("mail", "redirects mail_from's action to mail_to")
         self.mail_from = mail_from
-        self.mail_to = mail_to
+        self.mail_to = list(mail_to)
 
     def run(self, player, mapping):
-        mail_from, mail_to = mapping[player]
-        print(f"{player.name} mails {mail_from.name} to {mail_to.name}")
-        mapping[mail_from] = [mail_to]
+        mail_from, mail_to = mapping[player][0], mapping[player][1:]
+        message = f"{player.name} mails {mail_from.name} to {', '.join([p.name for p in mail_to])}"
+        if len(mail_to) != len(mapping[mail_from]):
+            message += " -> failed, wrong number of targets"
+        else:
+            mapping[mail_from] = mail_to
+        print(message)
 
 
 class KickOutOfTime(Action):

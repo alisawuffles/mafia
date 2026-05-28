@@ -10,12 +10,8 @@ return outcomes
 import re
 
 from player import Player
-from roles import ACTION_REGISTRY
+from action import Hitman, ACTION_REGISTRY, BLOCK_ACTIONS, REDIRECTION_ACTIONS
 from collections import defaultdict
-from roles import Hitman
-
-REDIRECTION_ACTIONS = {"bus_drive", "mail", "trolley_drive"}
-BLOCK_ACTIONS = {"block", "jailkeep"}
 
 
 class Game:
@@ -113,13 +109,30 @@ class Game:
             p for p, a in actions if a.get_name() in REDIRECTION_ACTIONS
         }
 
+        # find bus/trolley drivers that are being mailed
+        mailed_redirection_players = set()
+        for _, action in actions:
+            if action.get_name() == "mail":
+                targets = action.get_targets()
+                if targets[0] in redirection_players:
+                    mailed_redirection_players.add(targets[0])
+
         def sort_key(entry):
             player, action = entry
             name = action.get_name()
             if name in BLOCK_ACTIONS and action.target in redirection_players:
                 return (0, 0)  # blocks on redirection players go first
+            elif name == "mail" and action.mail_from in redirection_players:
+                return (
+                    1,
+                    0,
+                )  # mails on redirection players go before other redirections
+            elif (
+                name in REDIRECTION_ACTIONS and player not in mailed_redirection_players
+            ):
+                return (1, 1)  # unmailed redirections go next
             elif name in REDIRECTION_ACTIONS:
-                return (1, phase_order.index(name))  # redirections go second
+                return (1, 2)  # mailed redirections go after their mail
             else:
                 return (2, phase_order.index(name))  # everything else in phase order
 
