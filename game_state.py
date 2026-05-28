@@ -150,9 +150,6 @@ class Game:
         for player in self.index_to_player.values():
             player.end_night()
 
-    def get_game_state(self):
-        return self.mapping
-
     def print_actions(self, actions):
         for player, action in actions:
             print(

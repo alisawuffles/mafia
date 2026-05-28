@@ -24,34 +24,38 @@ class Block(Action):
 
     def run(self, player, mapping):
         target = mapping[player][0]
-        if target.role != "hitman":
+        if target.is_hitman:
+            print(f"{player.name} fails to block hitman {target.name}")
+        else:
             print(f"{player.name} blocks {target.name}")
             mapping[target] = []
-        else:
-            print(f"{player.name} fails to block hitman {target.name}")
 
 
-class JailKeep(Action):
+class Jailkeep(Action):
     """
     Jailkeeping a hitman does not block their kill, but still protects them.
     """
 
     def __init__(self, target):
-        super().__init__("jail keep", "simultaneously blocks and protects the target")
+        super().__init__("jailkeep", "simultaneously blocks and protects the target")
         self.target = target
 
     def run(self, player, mapping):
         target = mapping[player][0]
-        if target.role != "hitman":
-            print(f"{player.name} jail keeps {target.name}")
-            mapping[target] = []
+        if target.is_hitman:
+            print(f"{player.name} fails to block hitman {target.name}")
             target.protected = True
         else:
-            print(f"{player.name} fails to block hitman {target.name}")
+            print(f"{player.name} jailkeeps {target.name}")
+            mapping[target] = []
             target.protected = True
 
 
 class LokiBusDrive(Action):
+    """
+    The logic for this action is executed in the game state, as it is a bit special. :)
+    """
+
     def __init__(self, target_a, target_b):
         super().__init__(
             "loki_bus_drive", "target_a and target_b swap actions, but not targets"
@@ -180,7 +184,7 @@ class Imposter(Action):
 
     def run(self, player, mapping):
         target_a, target_b = mapping[player]
-        print(f"{player.name} imposters {target_a.name} as {target_b.name}")
+        print(f"{player.name} imposters as {target_a.name} visiting {target_b.name}")
 
 
 class Double(Action):
@@ -191,7 +195,7 @@ class Double(Action):
     def run(self, player, mapping):
         target = mapping[player][0]
         print(f"{player.name} doubles {target.name}")
-        target.modifiers.append(Modifier.DOUBLED)
+        target.add_modifier("doubled")
 
 
 class Hide(Action):
@@ -269,7 +273,10 @@ class Kill(Action):
 
 class Poison(Kill):
     """
-    Hiders get poisoned from hiding on the night of the poisoning, but do not die on the night someone dies from poison.
+    Behaves in exactly the same way as a kill, except that the consequence of the action is poison instead of kill. This means, for instance, that
+    - Hiders can be poisoned from hiding on the night of the poisoning, but do not die on the night someone dies from poison.
+    - An elite bodyguard guarding a poisoned player poisons the poisoner.
+
     A poisoned player can be saved on either the night of poisoning or the following night.
     """
 
@@ -350,12 +357,14 @@ class Investigate(Action):
 
 class RoleInvestigate(Action):
     def __init__(self, target):
-        super().__init__("role investigate", "sees role of target")
+        super().__init__("role_investigate", "sees role of target")
         self.target = target
 
     def run(self, player, mapping):
         target = mapping[player][0]
-        print(f"{player.name} role investigates {target.name} -> learns {target.role}")
+        print(
+            f"{player.name} role investigates {target.name} -> learns {target.name} role"
+        )
 
 
 class Track(Action):
@@ -417,7 +426,7 @@ class Journal(Action):
 
 ACTION_REGISTRY = {
     "block": Block,
-    "jailkeep": JailKeep,
+    "jailkeep": Jailkeep,
     "loki_bus_drive": LokiBusDrive,
     "bus_drive": BusDrive,
     "trolley_drive": TrolleyDrive,

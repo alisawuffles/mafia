@@ -71,7 +71,7 @@ def main():
     # game.run_actions(N2_ACTIONS)
 
     game = Game(players=list("ABCDE"))
-    actions = ["A: hide(B)", "C: hitman(B)", "D: protect(B)", "E: block(C)"]
+    actions = ["A: role_investigate(B)"]
     game.run_actions(actions)
 
 

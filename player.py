@@ -7,7 +7,7 @@ class Player:
         self.name = name
         self.index = index
         self.alignment = None
-        self.role = None
+        self.is_hitman = False
         self.alive = True
         self.modifiers = modifiers if modifiers is not None else []
 
@@ -22,6 +22,7 @@ class Player:
         self.framed = False
 
     def start_night(self):
+        self.is_hitman = False  # reset because in theory, the hitman can make a goon kill the following night
         self.hidden_behind = None
         self.hiding = []
         self.bodyguarded_by = None
