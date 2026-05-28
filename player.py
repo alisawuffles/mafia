@@ -1,3 +1,4 @@
+from ctypes import alignment
 from modifiers import Modifier
 
 
@@ -40,3 +41,11 @@ class Player:
         if isinstance(modifier, str):
             modifier = Modifier(modifier)
         self.modifiers.append(modifier)
+
+    def investigate(self):
+        outcome = self.alignment
+        if Modifier.SUSPICIOUS in self.modifiers or self.framed:
+            outcome = "guilty"
+        elif Modifier.GODFATHER in self.modifiers:
+            outcome = "innocent"
+        return outcome

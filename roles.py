@@ -1,12 +1,3 @@
-"""
-- godfather
-- warlord
-
-- incarnation of fury
-- ninja
-- poisoner
-"""
-
 from modifiers import Modifier
 
 
@@ -26,9 +17,6 @@ class Action:
         return targets
 
 
-### actions that determine the mapping from source to target
-
-
 class Block(Action):
     def __init__(self, target):
         super().__init__("block", "prevents the target from using their night action")
@@ -39,9 +27,15 @@ class Block(Action):
         if target.role != "hitman":
             print(f"{player.name} blocks {target.name}")
             mapping[target] = []
+        else:
+            print(f"{player.name} fails to block hitman {target.name}")
 
 
 class JailKeep(Action):
+    """
+    Jailkeeping a hitman does not block their kill, but still protects them.
+    """
+
     def __init__(self, target):
         super().__init__("jail keep", "simultaneously blocks and protects the target")
         self.target = target
@@ -51,6 +45,9 @@ class JailKeep(Action):
         if target.role != "hitman":
             print(f"{player.name} jail keeps {target.name}")
             mapping[target] = []
+            target.protected = True
+        else:
+            print(f"{player.name} fails to block hitman {target.name}")
             target.protected = True
 
 
@@ -120,9 +117,6 @@ class KickOutOfTime(Action):
                 targets.remove(target)
 
 
-### actions that flow through mapping
-
-
 class Protect(Action):
     def __init__(self, target):
         super().__init__("protect", "protects the target from being killed")
@@ -179,39 +173,14 @@ class Frame(Action):
 
 
 class Imposter(Action):
-    def __init__(self, imposters_as, visits):
+    def __init__(self, target_a, target_b):
         super().__init__("imposter", "imposters the target")
-        self.imposters_as = imposters_as
-        self.visits = visits
+        self.target_a = target_a
+        self.target_b = target_b
 
     def run(self, player, mapping):
-        imposters_as, visits = mapping[player]
-        print(f"{player.name} imposters as {imposters_as.name} visiting {visits.name}")
-
-
-class Investigate(Action):
-    def __init__(self, target):
-        super().__init__("investigate", "sees alignment of target")
-        self.target = target
-
-    def run(self, player, mapping):
-        target = mapping[player][0]
-        outcome = target.alignment
-        if Modifier.SUSPICIOUS in player.modifiers or player.framed:
-            outcome = "guilty"
-        elif Modifier.GODFATHER in player.modifiers:
-            outcome = "innocent"
-        print(f"{player.name} investigates {target.name} -> learns {outcome}")
-
-
-class RoleInvestigate(Action):
-    def __init__(self, target):
-        super().__init__("role investigate", "sees role of target")
-        self.target = target
-
-    def run(self, player, mapping):
-        target = mapping[player][0]
-        print(f"{player.name} role investigates {target.name} -> learns {target.role}")
+        target_a, target_b = mapping[player]
+        print(f"{player.name} imposters {target_a.name} as {target_b.name}")
 
 
 class Double(Action):
@@ -226,13 +195,17 @@ class Double(Action):
 
 
 class Hide(Action):
+    """
+    Consequences for hider are equivalent to those of an investigation. Hiding behind Mafia godfather is safe, but behind a suspicious player is not.
+    """
+
     def __init__(self, target):
         super().__init__("hide", "hides the target")
         self.target = target
 
     def run(self, player, mapping):
         target = mapping[player][0]
-        if target.alignment == "innocent":
+        if target.investigate() == "innocent":
             print(f"{player.name} hides behind {target.name} -> safe")
             player.hidden_behind = target
             target.hiding.append(player)
@@ -263,12 +236,12 @@ class Kill(Action):
             )
         elif target.bodyguarded_by:
             print(
-                f"{player.name} {self.kill_word} {target.name} -> {target.name} saved by bodyguard, {target.bodyguarded_by.name} dies"
+                f"{player.name} {self.kill_word} {target.name} -> {target.name} saved by bodyguard, {target.bodyguarded_by.name} {self.die_word}"
             )
             self.kill_or_poison(target.bodyguarded_by)
         elif target.elite_bodyguarded_by:
             print(
-                f"{player.name} {self.kill_word} {target.name} -> {target.name} saved by elite bodyguard, {target.elite_bodyguarded_by.name} dies"
+                f"{player.name} {self.kill_word} {target.name} -> {target.name} saved by elite bodyguard, {target.elite_bodyguarded_by.name} {self.die_word}"
             )
             self.kill_or_poison(target.elite_bodyguarded_by)
             self.kill_or_poison(player)
@@ -297,6 +270,7 @@ class Kill(Action):
 class Poison(Kill):
     """
     Hiders get poisoned from hiding on the night of the poisoning, but do not die on the night someone dies from poison.
+    A poisoned player can be saved on either the night of poisoning or the following night.
     """
 
     def __init__(self, target):
@@ -323,9 +297,10 @@ class NinjaKill(Kill):
 class JanitorKill(Kill):
     def __init__(self, target):
         super().__init__(target)
-        self.name = "janitor_kill"
+        self.name = "janitor"
         self.description = "victim's role and death note will not be revealed"
-        self.kill_word = "janitor-kills"
+        self.kill_word = "janitors"
+        self.die_word = "janitored"
 
 
 class CPR(Action):
@@ -345,17 +320,42 @@ class CPR(Action):
 
 class Hitman(Kill):
     def __init__(self, target):
-        super().__init__("hitman", "cannot be stopped by roleblock or protection")
+        super().__init__(target)
+        self.name = "hitman"
+        self.description = "cannot be stopped by roleblock or protection"
+        self.target = target
+        self.kill_word = "hitmans"
+
+    def run(self, player, mapping):
+        target = mapping[player][0]
+        self.kill_or_poison(target)
+        message = f"{player.name} {self.kill_word} {target.name} -> {target.name} {self.die_word}"
+        hiders = self.kill_hiders(target)
+        if hiders:
+            message += f" -> {', '.join([hider.name for hider in hiders])} {self.die_word} from hiding"
+        print(message)
+
+
+class Investigate(Action):
+    def __init__(self, target):
+        super().__init__("investigate", "sees alignment of target")
         self.target = target
 
     def run(self, player, mapping):
         target = mapping[player][0]
-        print(f"{player.name} hitmans {target.name}")
-        target.alive = False
-        self.kill_hiders(target)
         print(
-            f"{player.name} {self.kill_word} {target.name} -> {target.name + ', '.join([''] + [hider.name for hider in target.hiding])} die(s)"
+            f"{player.name} investigates {target.name} -> learns {target.investigate()}"
         )
+
+
+class RoleInvestigate(Action):
+    def __init__(self, target):
+        super().__init__("role investigate", "sees role of target")
+        self.target = target
+
+    def run(self, player, mapping):
+        target = mapping[player][0]
+        print(f"{player.name} role investigates {target.name} -> learns {target.role}")
 
 
 class Track(Action):
@@ -378,6 +378,43 @@ class Watch(Action):
         print(f"{player.name} watches {target.name}")
 
 
+class ForensicInvestigate(Action):
+    def __init__(self, target):
+        super().__init__(
+            "forensic_investigate", "see all players that have visited a dead body"
+        )
+        assert not self.target.alive, "target must be dead"
+        self.target = target
+
+    def run(self, player, mapping):
+        target = mapping[player][0]
+        print(f"{player.name} does forensic investigation on {target.name}")
+
+
+class Surveil(Action):
+    def __init__(self, target):
+        super().__init__(
+            "surveil", "like a watcher, but learns alignments rather than names"
+        )
+        self.target = target
+
+    def run(self, player, mapping):
+        target = mapping[player][0]
+        print(f"{player.name} surveils {target.name}")
+
+
+class Journal(Action):
+    def __init__(self, target):
+        super().__init__(
+            "journal", "receive a copy of any mod notes that the target receives"
+        )
+        self.target = target
+
+    def run(self, player, mapping):
+        target = mapping[player][0]
+        print(f"{player.name} journals {target.name}")
+
+
 ACTION_REGISTRY = {
     "block": Block,
     "jailkeep": JailKeep,
@@ -391,16 +428,19 @@ ACTION_REGISTRY = {
     "elite_bodyguard": EliteBodyguard,
     "frame": Frame,
     "imposter": Imposter,
-    "investigate": Investigate,
-    "role_investigate": RoleInvestigate,
     "double": Double,
     "hide": Hide,
     "kill": Kill,
-    "ninja_kill": NinjaKill,
-    "janitor_kill": JanitorKill,
     "poison": Poison,
+    "ninja_kill": NinjaKill,
+    "janitor": JanitorKill,
     "CPR": CPR,
     "hitman": Hitman,
+    "investigate": Investigate,
+    "role_investigate": RoleInvestigate,
     "track": Track,
     "watch": Watch,
+    "forensic_investigate": ForensicInvestigate,
+    "surveil": Surveil,
+    "journal": Journal,
 }

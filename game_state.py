@@ -127,6 +127,8 @@ class Game:
         actions = []
         for s in action_strs:
             player, action = self.parse_action(s)
+            if isinstance(action, Hitman):
+                player.role = "hitman"
             self.mapping[player] = action.get_targets()
             actions.append((player, action))
 
@@ -141,7 +143,7 @@ class Game:
 
         # execute actions
         for player, action in actions:
-            if self.mapping[player] or isinstance(action, Hitman):
+            if self.mapping[player]:
                 action.run(player, self.mapping)
 
         # end night
