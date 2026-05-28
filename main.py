@@ -43,36 +43,36 @@ N2_ACTIONS = [
 
 
 def main():
-    # game = Game(
-    #     players=[
-    #         "Audrey",
-    #         "Alexandra",
-    #         "Aman",
-    #         "Brandon",
-    #         "Jason",
-    #         "Jon",
-    #         "Oscar",
-    #         "Sam",
-    #         "Alisa",
-    #         "Henry",
-    #         "Joseph",
-    #         "Nick",
-    #         "Stanley",
-    #         "Willie",
-    #     ],
-    #     scum=["Sam", "Oscar", "Jason", "Joseph"],
-    #     modifiers={"Henry": "stone"},
-    # )
-    # print("----- Night 0 -----")
-    # game.run_actions(N0_ACTIONS)
-    # print("----- Night 1 -----")
-    # game.run_actions(N1_ACTIONS)
-    # print("----- Night 2 -----")
-    # game.run_actions(N2_ACTIONS)
+    game = Game(
+        players=[
+            "Audrey",
+            "Alexandra",
+            "Aman",
+            "Brandon",
+            "Jason",
+            "Jon",
+            "Oscar",
+            "Sam",
+            "Alisa",
+            "Henry",
+            "Joseph",
+            "Nick",
+            "Stanley",
+            "Willie",
+        ],
+        scum=["Sam", "Oscar", "Jason", "Joseph"],
+        modifiers={"Henry": "stone", "Alisa": "suspicious"},
+    )
+    print("----- Night 0 -----")
+    game.run_actions(N0_ACTIONS)
+    print("----- Night 1 -----")
+    game.run_actions(N1_ACTIONS)
+    print("----- Night 2 -----")
+    game.run_actions(N2_ACTIONS)
 
-    game = Game(players=list("ABCDE"))
-    actions = ["A: role_investigate(B)"]
-    game.run_actions(actions)
+    # game = Game(players=list("ABCDE"))
+    # actions = ["A: mail(B, C)", "B: bus_drive(D, E)"]
+    # game.run_actions(actions)
 
 
 if __name__ == "__main__":

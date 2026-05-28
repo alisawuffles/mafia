@@ -1,4 +1,3 @@
-from ctypes import alignment
 from modifiers import Modifier
 
 
@@ -7,29 +6,24 @@ class Player:
         self.name = name
         self.index = index
         self.alignment = None
-        self.is_hitman = False
         self.alive = True
         self.modifiers = modifiers if modifiers is not None else []
+        self.poison_day = 0
+        self._reset_night_state()
 
-        # for tracking night actions
+    def _reset_night_state(self):
+        self.is_hitman = False
         self.hidden_behind = None
         self.hiding = []
         self.bodyguarded_by = None
         self.elite_bodyguarded_by = None
-        self.protected = Modifier.BULLETPROOF in self.modifiers
-        self.poison_day = 0
         self.furious = False
         self.framed = False
+        self.doubled = False
+        self.protected = Modifier.BULLETPROOF in self.modifiers
 
     def start_night(self):
-        self.is_hitman = False  # reset because in theory, the hitman can make a goon kill the following night
-        self.hidden_behind = None
-        self.hiding = []
-        self.bodyguarded_by = None
-        self.elite_bodyguarded_by = None
-        self.furious = False
-        self.framed = False
-        self.protected = Modifier.BULLETPROOF in self.modifiers
+        self._reset_night_state()
         if self.poison_day == 1:
             self.poison_day = 2
 

@@ -41,6 +41,9 @@ class Game:
             for mod in mods:
                 player.add_modifier(mod)
 
+        self._reset_mapping()
+
+    def _reset_mapping(self):
         self.mapping = defaultdict(list)
 
     def resolve_player(self, identifier):
@@ -123,7 +126,8 @@ class Game:
         return sorted(actions, key=sort_key)
 
     def run_actions(self, action_strs):
-        # setup: populate intended mapping from source to target so we can modify with mischief roles
+        # populate intended mapping from source to target so we can modify with mischief roles
+        self._reset_mapping()
         actions = []
         for s in action_strs:
             player, action = self.parse_action(s)
@@ -135,7 +139,7 @@ class Game:
         actions = self.sort_actions(actions)
         print("Sorted actions:")
         self.print_actions(actions)
-        print("----")
+        print("-- Actions --")
 
         # start night
         for player in self.index_to_player.values():
@@ -150,6 +154,8 @@ class Game:
         for player in self.index_to_player.values():
             player.end_night()
 
+        self.print_night_summary()
+
     def print_actions(self, actions):
         for player, action in actions:
             print(
@@ -160,3 +166,7 @@ class Game:
         for source, targets in self.mapping.items():
             target_names = [t.name for t in targets]
             print(f"{source.name} -> {', '.join(target_names)}")
+
+    def print_night_summary(self):
+        print("-- Visit summary --")
+        self.print_mapping()

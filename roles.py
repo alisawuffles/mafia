@@ -1,4 +1,5 @@
 from modifiers import Modifier
+from collections import Counter
 
 
 class Action:
@@ -195,7 +196,7 @@ class Double(Action):
     def run(self, player, mapping):
         target = mapping[player][0]
         print(f"{player.name} doubles {target.name}")
-        target.add_modifier("doubled")
+        target.doubled = True
 
 
 class Hide(Action):
@@ -204,7 +205,7 @@ class Hide(Action):
     """
 
     def __init__(self, target):
-        super().__init__("hide", "hides the target")
+        super().__init__("hide", "hides behind the target")
         self.target = target
 
     def run(self, player, mapping):
@@ -330,7 +331,6 @@ class Hitman(Kill):
         super().__init__(target)
         self.name = "hitman"
         self.description = "cannot be stopped by roleblock or protection"
-        self.target = target
         self.kill_word = "hitmans"
 
     def run(self, player, mapping):
@@ -374,7 +374,10 @@ class Track(Action):
 
     def run(self, player, mapping):
         target = mapping[player][0]
-        print(f"{player.name} tracks {target.name}")
+        visits = [p.name for p in mapping[target]]
+        print(
+            f'{player.name} tracks {target.name} -> "your target visited {", ".join(visits)}"'
+        )
 
 
 class Watch(Action):
@@ -384,7 +387,12 @@ class Watch(Action):
 
     def run(self, player, mapping):
         target = mapping[player][0]
-        print(f"{player.name} watches {target.name}")
+        visitors = [
+            p.name for p in mapping.keys() if target in mapping[p] and p != player
+        ]
+        print(
+            f'{player.name} watches {target.name} -> "{", ".join(visitors)} visited your target"'
+        )
 
 
 class ForensicInvestigate(Action):
@@ -392,8 +400,8 @@ class ForensicInvestigate(Action):
         super().__init__(
             "forensic_investigate", "see all players that have visited a dead body"
         )
-        assert not self.target.alive, "target must be dead"
         self.target = target
+        assert not self.target.alive, "target must be dead"
 
     def run(self, player, mapping):
         target = mapping[player][0]
@@ -409,7 +417,18 @@ class Surveil(Action):
 
     def run(self, player, mapping):
         target = mapping[player][0]
-        print(f"{player.name} surveils {target.name}")
+        visitor_alignments = Counter(
+            [
+                p.investigate()
+                for p in mapping.keys()
+                if target in mapping[p] and p != player
+            ]
+        )
+        note = ""
+        for alignment, count in visitor_alignments.items():
+            note += f"{count} {alignment}, "
+        note = note[:-2] + " visited your target"
+        print(f'{player.name} surveils {target.name} -> "{note}"')
 
 
 class Journal(Action):
@@ -421,7 +440,9 @@ class Journal(Action):
 
     def run(self, player, mapping):
         target = mapping[player][0]
-        print(f"{player.name} journals {target.name}")
+        print(
+            f"{player.name} journals {target.name} -> receives {target.name} mod note"
+        )
 
 
 ACTION_REGISTRY = {
