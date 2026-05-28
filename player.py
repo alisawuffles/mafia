@@ -9,6 +9,7 @@ class Player:
         self.alive = True
         self.modifiers = modifiers if modifiers is not None else []
         self.poison_day = 0
+        self.all_visitors = []  # for forensic investigator
         self._reset_night_state()
 
     def _reset_night_state(self):

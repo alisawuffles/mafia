@@ -70,8 +70,8 @@ def main():
     # print("----- Night 2 -----")
     # game.run_actions(N2_ACTIONS)
 
-    game = Game(players=list("ABCDE"))
-    actions = ["A: bus_drive(B, C)", "B: mail(A, D, E)"]
+    game = Game(players=list("ABCDXYZ"))
+    actions = ["A: kill(X)", "A: kill(Y)"]
     game.run_actions(actions)
 
 

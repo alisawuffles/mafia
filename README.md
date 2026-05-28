@@ -10,7 +10,8 @@ We do not verify the validity of the actions (e.g., checking that player uses an
 - [x] add support for investigation results
 - [x] revised resolution of mailman and bus drive order
 - [x] mail only succeeds (and does not throw an error) if the number of targets specified is exactly correct
-- [ ] (maybe) add support for forensic investigation results
+- [x] add support for forensic investigation results
+- [ ] support multiple actions from the same player
 - [ ] add support for paranoid players (no idea how this is going to happen)
 - [ ] maybe related: add support for TNT
 - [ ] add support for logic gate (this will be a big undertaking as it requires re-rolling out subsequent actions after modifying the success of a former action)
@@ -29,6 +30,8 @@ Ordering:
 - A mailman needs to specify exactly the right number of targets matching the action they are mailing (they can specify as many recipients of mail as they'd like).
 - Hider can inherit poisoning on the night of poisoning, but will not die on the day a poisoned player dies.
 - An elite bodyguard poisons-back the poisoner.
+- Only single-target abilities can be paranoid.
+- If there are two bus drives A <-> B and B <-> C, then actions on B land on both A and C, while actions on either A or C lands on B.
 
 ### How to resolve blocks and redirections?
 Blocks and redirections are resolved in the following order. This makes it so that mischief roles are blockable, yet blocks can travel through redirections.
@@ -51,6 +54,9 @@ This leads to a reasonable ruling in the following cases:
 - If A bus drives B and C and X mails A to D and E, what happens? Mail first, so D and E are bus driven
 - If A bus drives B and C and X mails B to D, what happens? Bus drive first, so C is mailed to D
 
-### General rules of thumb
+### Alisa's design principles
+These are the design principles that explains my rationale behind choices.
 - Blocks should not land on players after their action has already been performed.
 - When resolving the order of two actions, the one affecting which action the other takes should come first.
+- Actions of the same type should be resolved simultaneously. For instance, if A and B block each other, then both are blocked and visit each other. If two bus drives A <-> B and B <-> C occurs, the resolution should treat both bus drives with equal status rather than arbitrarily choosing one to come first.
+- Avoid randomness and arbitrariness whenever possible. We refuse to import `random` in this repo. :)

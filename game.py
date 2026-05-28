@@ -10,7 +10,13 @@ return outcomes
 import re
 
 from player import Player
-from action import Hitman, ACTION_REGISTRY, BLOCK_ACTIONS, REDIRECTION_ACTIONS
+from action import (
+    Hitman,
+    BatchBusDrive,
+    ACTION_REGISTRY,
+    BLOCK_ACTIONS,
+    REDIRECTION_ACTIONS,
+)
 from collections import defaultdict
 
 
@@ -105,6 +111,44 @@ class Game:
                     # remove the Loki bus drive, since we have already applied it here
                     actions.remove((player, action))
 
+        # TODO: this code is broken
+        # if multiple bus drives, consolidate into a single BatchBusDrive
+        # and duplicate actions whose targets expand (e.g. kill(B) -> kill(A), kill(C))
+        bus_drive_entries = [(p, a) for p, a in actions if a.get_name() == "bus_drive"]
+        if len(bus_drive_entries) > 1:
+            # build swap graph to know which targets expand
+            swaps = defaultdict(set)
+            for _, bd_action in bus_drive_entries:
+                swaps[bd_action.target_a].add(bd_action.target_b)
+                swaps[bd_action.target_b].add(bd_action.target_a)
+
+            for entry in bus_drive_entries:
+                actions.remove(entry)
+            batch = BatchBusDrive(bus_drive_entries)
+            actions.append((bus_drive_entries[0][0], batch))
+
+            # duplicate actions whose targets expand to multiple players
+            new_actions = []
+            for player, action in actions:
+                if action.get_name() in REDIRECTION_ACTIONS:
+                    new_actions.append((player, action))
+                    continue
+                targets = action.get_targets()
+                if (
+                    len(targets) == 1
+                    and targets[0] in swaps
+                    and len(swaps[targets[0]]) > 1
+                ):
+                    # target expands to multiple — create one action per expanded target
+                    actions.remove((player, action))
+                    for new_target in swaps[targets[0]]:
+                        new_actions.append(
+                            (player, ACTION_REGISTRY[action.get_name()](new_target))
+                        )
+                else:
+                    new_actions.append((player, action))
+            actions = new_actions
+
         redirection_players = {
             p for p, a in actions if a.get_name() in REDIRECTION_ACTIONS
         }
@@ -120,21 +164,21 @@ class Game:
         def sort_key(entry):
             player, action = entry
             name = action.get_name()
+            # (1) blocks on redirection players
             if name in BLOCK_ACTIONS and action.target in redirection_players:
-                return (0, 0)  # blocks on redirection players go first
+                return (0, 0)
+            # (2) mails on redirection players
             elif name == "mail" and action.mail_from in redirection_players:
-                return (
-                    1,
-                    0,
-                )  # mails on redirection players go before other redirections
-            elif (
-                name in REDIRECTION_ACTIONS and player not in mailed_redirection_players
-            ):
-                return (1, 1)  # unmailed redirections go next
+                return (1, 0)
+            # (3) mailed redirections
+            elif name in REDIRECTION_ACTIONS and player in mailed_redirection_players:
+                return (1, 2)
+            # (4) other redirections
             elif name in REDIRECTION_ACTIONS:
-                return (1, 2)  # mailed redirections go after their mail
+                return (1, 1, phase_order.index(name))
+            # everything else
             else:
-                return (2, phase_order.index(name))  # everything else in phase order
+                return (2, phase_order.index(name))
 
         return sorted(actions, key=sort_key)
 
@@ -160,14 +204,17 @@ class Game:
 
         # execute actions
         for player, action in actions:
-            if self.mapping[player]:
+            if self.mapping[player] and action.get_name() != "batched_bus_drive":
                 action.run(player, self.mapping)
+
+        # record global visitors for forensic investigator
+        for source, targets in self.mapping.items():
+            for target in targets:
+                target.all_visitors.append(source)
 
         # end night
         for player in self.index_to_player.values():
             player.end_night()
-
-        self.print_night_summary()
 
     def print_actions(self, actions):
         for player, action in actions:

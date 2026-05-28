@@ -1,7 +1,7 @@
 from modifiers import Modifier
-from collections import Counter
+from collections import Counter, defaultdict
 
-REDIRECTION_ACTIONS = {"bus_drive", "mail", "trolley_drive"}
+REDIRECTION_ACTIONS = {"bus_drive", "batch_bus_drive", "mail", "trolley_drive"}
 BLOCK_ACTIONS = {"block", "jailkeep"}
 
 
@@ -88,6 +88,36 @@ class BusDrive(Action):
                     targets[i] = target_b
                 elif t == target_b:
                     targets[i] = target_a
+
+
+class BatchBusDrive(Action):
+    """Created when multiple bus drives exist. Processes all bus drives simultaneously."""
+
+    def __init__(self, bus_drives):
+        super().__init__(
+            "batch_bus_drive", "executes multiple bus drives simultaneously"
+        )
+        self.bus_drives = bus_drives  # list of (player, BusDrive) tuples
+
+    def get_targets(self):
+        return []
+
+    def run(self, _player, mapping):
+        swaps = defaultdict(set)
+        for driver, action in self.bus_drives:
+            target_a, target_b = mapping[driver]
+            swaps[target_a].add(target_b)
+            swaps[target_b].add(target_a)
+            print(f"{driver.name} bus drives {target_a.name} and {target_b.name}")
+
+        for source, targets in mapping.items():
+            new_targets = []
+            for t in targets:
+                if t in swaps:
+                    new_targets.extend(swaps[t])
+                else:
+                    new_targets.append(t)
+            mapping[source] = new_targets
 
 
 class TrolleyDrive(Action):
@@ -414,11 +444,13 @@ class ForensicInvestigate(Action):
             "forensic_investigate", "see all players that have visited a dead body"
         )
         self.target = target
-        assert not self.target.alive, "target must be dead"
 
     def run(self, player, mapping):
         target = mapping[player][0]
-        print(f"{player.name} does forensic investigation on {target.name}")
+        visitors = [p.name for p in target.all_visitors]
+        print(
+            f'{player.name} forensic investigates {target.name} -> "{", ".join(visitors)} visited the body"'
+        )
 
 
 class Surveil(Action):
@@ -463,6 +495,7 @@ ACTION_REGISTRY = {
     "jailkeep": Jailkeep,
     "loki_bus_drive": LokiBusDrive,
     "bus_drive": BusDrive,
+    "batch_bus_drive": BatchBusDrive,
     "trolley_drive": TrolleyDrive,
     "mail": Mail,
     "kick_out_of_time": KickOutOfTime,
