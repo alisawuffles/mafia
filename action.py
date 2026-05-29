@@ -165,9 +165,9 @@ class KickOutOfTime(Action):
                 targets.remove(target)
 
 
-class Protect(Action):
+class Doctor(Action):
     def __init__(self, target):
-        super().__init__("protect", "protects the target from being killed")
+        super().__init__("doctor", "protects the target from being killed")
         self.target = target
 
     def run(self, player, mapping):
@@ -229,6 +229,7 @@ class Imposter(Action):
     def run(self, player, mapping):
         target_a, target_b = mapping[player]
         print(f"{player.name} imposters as {target_a.name} visiting {target_b.name}")
+        mapping[target_a].append(target_b)
 
 
 class Double(Action):
@@ -354,19 +355,31 @@ class JanitorKill(Kill):
         self.die_word = "janitored"
 
 
-class CPR(Action):
+class CPR(Kill):
+    """
+    If target is alive, then CPR resolves like a regular kill.
+    If target is dead, then CPR saves them (and any hiders).
+    """
+
     def __init__(self, target):
-        super().__init__("CPR", "saves target if killed, otherwise kills target")
-        self.target = target
+        super().__init__(target)
+        self.name = "CPR"
+        self.description = "saves target if killed, otherwise kills target"
+        self.kill_word = "CPRs"
 
     def run(self, player, mapping):
         target = mapping[player][0]
         if target.alive:
-            print(f"{player.name} CPRs {target.name} -> {target.name} dies")
+            super().run(player, mapping)
             target.alive = False
         else:
-            print(f"{player.name} CPRs {target.name} -> {target.name} lives")
             target.alive = True
+            message = f"{player.name} CPRs {target.name} -> {target.name} saved"
+            for hider in target.hiding:
+                hider.alive = True
+            if target.hiding:
+                message += f" -> hider(s) {', '.join([hider.name for hider in target.hiding])} saved too"
+            print(message)
 
 
 class Hitman(Kill):
@@ -499,7 +512,7 @@ ACTION_REGISTRY = {
     "trolley_drive": TrolleyDrive,
     "mail": Mail,
     "kick_out_of_time": KickOutOfTime,
-    "protect": Protect,
+    "doctor": Doctor,
     "bodyguard": Bodyguard,
     "elite_bodyguard": EliteBodyguard,
     "frame": Frame,

@@ -216,6 +216,8 @@ class Game:
         for player in self.index_to_player.values():
             player.end_night()
 
+        self.print_night_summary()
+
     def print_actions(self, actions):
         for player, action in actions:
             print(

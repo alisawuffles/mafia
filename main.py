@@ -70,9 +70,27 @@ def main():
     # print("----- Night 2 -----")
     # game.run_actions(N2_ACTIONS)
 
-    game = Game(players=list("ABCDXYZ"))
-    actions = ["A: kill(X)", "A: kill(Y)"]
+    # game = Game(players=list("ABC"))
+    # actions = ["A: CPR(B)", "C: doctor(B)"]
+    # game.run_actions(actions)
+
+    # hider test cases
+    # game = Game(players=list("AXY"))
+    # actions = ["X: CPR(A)", "Y: kill(A)"]
+    # game.run_actions(actions)
+
+    # game = Game(players=list("AXY"))
+    # actions = ["X: CPR(A)", "Y: doctor(A)"]
+    # game.run_actions(actions)
+
+    # CPR also saves hider
+    game = Game(players=list("ABXY"))
+    actions = ["X: CPR(A)", "Y: kill(A)", "B: hide(A)"]
     game.run_actions(actions)
+
+    # game = Game(players=list("ABXY"))
+    # actions = ["X: CPR(B)", "B: hide(A)"]
+    # game.run_actions(actions)
 
 
 if __name__ == "__main__":
