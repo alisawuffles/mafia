@@ -10,14 +10,14 @@ We do not verify the validity of the actions (e.g., checking that player uses an
 - [x] support investigation results
 - [x] resolve mailman and bus drive correctly
 - [x] mail only succeeds if the number of targets specified is exactly correct
-- [ ] support multiple actions from the same player
+- [x] fix hider logic
 - [ ] imposter should change what investigators see
+- [ ] support multiple actions from the same player
 - [ ] support paranoid players
 - [ ] maybe related: support TNT
 - [ ] support logic gate (this will be a big undertaking as it requires re-rolling out subsequent actions after modifying the success of a former action)
 - [ ] support multiple bus drives (in-progress `BatchedBusDrive`)
 - [ ] pretty-print all player information (alive/dead, modifiers)
-- [x] fix hider logic
 
 ## Design decisions
 Ordering:

@@ -230,6 +230,9 @@ class Imposter(Action):
         target_a, target_b = mapping[player]
         print(f"{player.name} imposters as {target_a.name} visiting {target_b.name}")
         mapping[target_a].append(target_b)
+        # after executing the action, we remove from mapping so it won't be visible in investigations
+        mapping[player].remove(target_a)
+        mapping[player].remove(target_b)
 
 
 class Double(Action):
@@ -431,9 +434,12 @@ class Track(Action):
     def run(self, player, mapping):
         target = mapping[player][0]
         visits = [p.name for p in mapping[target]]
-        print(
-            f'{player.name} tracks {target.name} -> "your target visited {", ".join(visits)}"'
-        )
+        message = f"{player.name} tracks {target.name}"
+        if visits:
+            message += f" -> your target visited {', '.join(visits)}"
+        else:
+            message += " -> your target visited no one"
+        print(message)
 
 
 class Watch(Action):
@@ -443,12 +449,15 @@ class Watch(Action):
 
     def run(self, player, mapping):
         target = mapping[player][0]
+        message = f"{player.name} watches {target.name}"
         visitors = [
             p.name for p in mapping.keys() if target in mapping[p] and p != player
         ]
-        print(
-            f'{player.name} watches {target.name} -> "{", ".join(visitors)} visited your target"'
-        )
+        if visitors:
+            message += f" -> {', '.join(visitors)} visited your target"
+        else:
+            message += " -> no one visited your target"
+        print(message)
 
 
 class ForensicInvestigate(Action):
