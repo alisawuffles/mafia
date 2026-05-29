@@ -2,16 +2,18 @@
 
 Specify game in `main.py` and run with `python -m main`.
 
-The purpose of this tool is to support action resolution. The night is fully determined by a set of players performing actions on targets, and the script automatically executes the actions in the correct order. 
+The purpose of this tool is to support night action resolution. The night is fully determined by a set of players performing actions on targets, and the script automatically executes the actions in the correct order. 
 
-We do not verify the validity of the actions (e.g., checking that player uses an ability they have) or support functionality that would change the validity of actions the following night (e.g., doubling, enthralling book). Note we do not keep track of player roles at all, as they are irrelevant to the action resolution (vigilante and mafia kills are resolved the same way). Because of this, we also do not determine when the end-of-game criteria is met.
+### Notes on scope
+- We do not verify the validity of actions or perform logic that changes the validity of actions the following night. This includes (but is not limited to): doubling, enthralling book, copycat. It is up to the moderator to verify that each player performs a valid action.
+- We do not record player roles, as they are irrelevant to action resolution (for instance, mafia and vigilante kills are resolved the same way). However, we do record player alignments (either "innocent" or "guilty") for the purposes of producing investigation results.
 
 ### TODO:
 - [x] support investigation results
 - [x] resolve mailman and bus drive correctly
 - [x] mail only succeeds if the number of targets specified is exactly correct
 - [x] fix hider logic
-- [ ] imposter should change what investigators see
+- [x] imposter and ninja should change what investigators see
 - [ ] support multiple actions from the same player
 - [ ] support paranoid players
 - [ ] maybe related: support TNT
@@ -21,19 +23,23 @@ We do not verify the validity of the actions (e.g., checking that player uses an
 
 ## Design decisions
 Ordering:
-1. Blocks / jailkeeps on redirection players
-2. Mails targeting a redirection player
-3. Redirection actions
-4. Everything else
+1. Blocks on redirection action
+2. Mails on redirection action
+3. Non-mail redirections
+4. Other mails
+5. Everything else
 
 ### Rulings
 - A player can be saved from poisoning on either the day of poisoning or the following day.
 - A mailman needs to specify exactly the right number of targets matching the action they are mailing (they can specify as many recipients of mail as they'd like), otherwise the mail fails.
+- Loki bus drive between A and B succeeds only if the actions by A and B have the same number of targets.
 - Hider can inherit poisoning on the night of poisoning, but will not die on the day a poisoned player dies.
 - An elite bodyguard poisons-back the poisoner.
 - Only single-target abilities can be paranoid.
 - If there are two bus drives A <-> B and B <-> C, then actions on B land on both A and C, while actions on either A or C lands on B.
 - A CPR resolves like a regular kill if the target is otherwise alive. This means that CPR-kill on a hider would miss, and CPR-kill on someone would also kill their hider(s). If target should otherwise die, then the CPR saves them and also their hider(s).
+- For the purposes of investigation, an imposter X that imposters as A visiting B is only seen visiting A.
+- If someone is recruited to the cult and dies on the same night, they die as cult.
 
 ### How to resolve blocks and redirections?
 Blocks and redirections are resolved in the following order. This makes it so that mischief roles are blockable, yet blocks can travel through redirections.
@@ -42,9 +48,9 @@ Blocks and redirections are resolved in the following order. This makes it so th
 3. Other blocks — flows through the revised mapping
 
 This leads to reasonable rulings in all three cases:
-- If A blocks B and X bus drives B and C, does the bus drive occur? Yes
-- If A blocks B and B bus drives C and D, does the bus drive occur? No
-- If A blocks B and B bus drives B and C, does the bus drive occur? No
+- If A blocks B and X bus drives B <-> C, does the bus drive occur? Yes, A's block is redirected to C
+- If A blocks B and B bus drives C <-> D, does the bus drive occur? No, blocks on redirections prevent the redirection from happening
+- If A blocks B and B bus drives B <-> C, does the bus drive occur? No, by the same reasoning. This one feels like it could go either way.
 
 ### How to resolve mailmen and bus drives?
 If a mailman mails a bus driver, then the mail should come first. Otherwise, the bus drive comes first. In other words,
@@ -52,9 +58,9 @@ If a mailman mails a bus driver, then the mail should come first. Otherwise, the
 2. Bus drives
 3. Other mails
 
-This leads to a reasonable ruling in the following cases:
-- If A bus drives B and C and X mails A to D and E, what happens? Mail first, so D and E are bus driven
-- If A bus drives B and C and X mails B to D, what happens? Bus drive first, so C is mailed to D
+This leads to a reasonable ruling in both of the following cases:
+- If A bus drives B <-> C and X mails A to D and E, what happens? Mail first, so D and E are bus driven
+- If A bus drives B <-> C and X mails B to D, what happens? Bus drive first, so C is mailed to D
 
 ### Alisa's design principles
 These are the design principles that motivate my rulings.

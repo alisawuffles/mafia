@@ -43,32 +43,32 @@ N2_ACTIONS = [
 
 
 def main():
-    game = Game(
-        players=[
-            "Audrey",
-            "Alexandra",
-            "Aman",
-            "Brandon",
-            "Jason",
-            "Jon",
-            "Oscar",
-            "Sam",
-            "Alisa",
-            "Henry",
-            "Joseph",
-            "Nick",
-            "Stanley",
-            "Willie",
-        ],
-        scum=["Sam", "Oscar", "Jason", "Joseph"],
-        modifiers={"Henry": "stone", "Alisa": "suspicious"},
-    )
-    print("----- Night 0 -----")
-    game.run_actions(N0_ACTIONS)
-    print("----- Night 1 -----")
-    game.run_actions(N1_ACTIONS)
-    print("----- Night 2 -----")
-    game.run_actions(N2_ACTIONS)
+    # game = Game(
+    #     players=[
+    #         "Audrey",
+    #         "Alexandra",
+    #         "Aman",
+    #         "Brandon",
+    #         "Jason",
+    #         "Jon",
+    #         "Oscar",
+    #         "Sam",
+    #         "Alisa",
+    #         "Henry",
+    #         "Joseph",
+    #         "Nick",
+    #         "Stanley",
+    #         "Willie",
+    #     ],
+    #     scum=["Sam", "Oscar", "Jason", "Joseph"],
+    #     modifiers={"Henry": "stone", "Alisa": "suspicious"},
+    # )
+    # print("----- Night 0 -----")
+    # game.run_actions(N0_ACTIONS)
+    # print("----- Night 1 -----")
+    # game.run_actions(N1_ACTIONS)
+    # print("----- Night 2 -----")
+    # game.run_actions(N2_ACTIONS)
 
     # game = Game(players=list("ABC"))
     # actions = ["A: CPR(B)", "C: doctor(B)"]
@@ -110,6 +110,24 @@ def main():
     # game = Game(players=list("ABXY"))
     # actions = ["X: imposter(A, B)", "Y: track(A)"]
     # game.run_actions(actions)
+
+    # ninja tests
+    # game = Game(players=list("ABC"))
+    # actions = ["A: ninja_kill(B)", "C: track(A)"]
+    # game.run_actions(actions)
+
+    # game = Game(players=list("ABC"))
+    # actions = ["A: ninja_kill(B)", "C: watch(B)"]
+    # game.run_actions(actions)
+
+    # game = Game(players=list("ABCXYZ"))
+    # actions = ["A: kick_out_of_time(X)", "Y: kill(X)", "Z: track(Y)"]
+    # game.run_actions(actions)
+
+    # test jailkeep
+    game = Game(players=list("ABCXYZ"))
+    actions = ["A: jailkeep(A)", "B: kill(A)"]
+    game.run_actions(actions)
 
 
 if __name__ == "__main__":

@@ -40,6 +40,7 @@ class Block(Action):
 class Jailkeep(Action):
     """
     Jailkeeping a hitman does not block their kill, but still protects them.
+    Self-jailkeeping protects the player.
     """
 
     def __init__(self, target):
@@ -229,9 +230,9 @@ class Imposter(Action):
     def run(self, player, mapping):
         target_a, target_b = mapping[player]
         print(f"{player.name} imposters as {target_a.name} visiting {target_b.name}")
+        # target_a will be seen visiting target_b
         mapping[target_a].append(target_b)
-        # after executing the action, we remove from mapping so it won't be visible in investigations
-        mapping[player].remove(target_a)
+        # after executing the action, we remove target_b from mapping so it won't be visible in investigations
         mapping[player].remove(target_b)
 
 
@@ -347,6 +348,11 @@ class NinjaKill(Kill):
         self.name = "ninja_kill"
         self.description = "kills target while being invisible to trackers and watchers"
         self.kill_word = "ninja-kills"
+
+    def run(self, player, mapping):
+        super().run(player, mapping)
+        # after executing the action, we remove from mapping so it won't be visible in investigations
+        mapping[player] = []
 
 
 class JanitorKill(Kill):
@@ -469,10 +475,13 @@ class ForensicInvestigate(Action):
 
     def run(self, player, mapping):
         target = mapping[player][0]
+        message = f"{player.name} forensic investigates {target.name}"
         visitors = [p.name for p in target.all_visitors]
-        print(
-            f'{player.name} forensic investigates {target.name} -> "{", ".join(visitors)} visited the body"'
-        )
+        if visitors:
+            message += f" -> {', '.join(visitors)} visited the body"
+        else:
+            message += " -> no one visited the body"
+        print(message)
 
 
 class Surveil(Action):
